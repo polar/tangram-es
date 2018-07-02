@@ -422,7 +422,10 @@ std::vector<Tangram::SceneUpdate> unpackSceneUpdates(NSArray<TGSceneUpdate *> *s
     if (!self.map) { return; }
 
     Tangram::EaseType ease = [TGHelpers convertEaseTypeFrom:easeType];
-    self.map->setPositionEased(position.longitude, position.latitude, seconds, ease);
+    auto pos = self.map->getCameraPosition();
+    pos.longitude = position.longitude;
+    pos.latitude = position.latitude;
+    self.map->setCameraPositionEased(pos, seconds, ease);
 }
 
 - (TGGeoPoint)position
@@ -455,7 +458,9 @@ std::vector<Tangram::SceneUpdate> unpackSceneUpdates(NSArray<TGSceneUpdate *> *s
     if (!self.map) { return; }
 
     Tangram::EaseType ease = [TGHelpers convertEaseTypeFrom:easeType];
-    self.map->setZoomEased(zoomLevel, seconds, ease);
+    auto pos = self.map->getCameraPosition();
+    pos.zoom = zoomLevel;
+    self.map->setCameraPositionEased(pos, seconds, ease);
 }
 
 - (float)zoom
@@ -475,7 +480,9 @@ std::vector<Tangram::SceneUpdate> unpackSceneUpdates(NSArray<TGSceneUpdate *> *s
     if (!self.map) { return; }
 
     Tangram::EaseType ease = [TGHelpers convertEaseTypeFrom:easeType];
-    self.map->setRotationEased(radians, seconds, ease);
+    auto pos = self.map->getCameraPosition();
+    pos.rotation = radians;
+    self.map->setCameraPositionEased(pos, seconds, ease);
 }
 
 - (void)setRotation:(float)radians
@@ -516,7 +523,9 @@ std::vector<Tangram::SceneUpdate> unpackSceneUpdates(NSArray<TGSceneUpdate *> *s
     if (!self.map) { return; }
 
     Tangram::EaseType ease = [TGHelpers convertEaseTypeFrom:easeType];
-    self.map->setTiltEased(radians, seconds, ease);
+    auto pos = self.map->getCameraPosition();
+    pos.tilt = radians;
+    self.map->setCameraPositionEased(pos, seconds, ease);
 }
 
 #pragma mark Camera type
