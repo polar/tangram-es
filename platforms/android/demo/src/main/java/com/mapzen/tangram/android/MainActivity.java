@@ -8,6 +8,7 @@ import android.view.Window;
 import android.widget.Toast;
 
 import com.mapzen.tangram.CachePolicy;
+import com.mapzen.tangram.CameraUpdate;
 import com.mapzen.tangram.HttpHandler;
 import com.mapzen.tangram.LabelPickResult;
 import com.mapzen.tangram.LngLat;
@@ -220,20 +221,21 @@ public class MainActivity extends AppCompatActivity implements MapController.Sce
         map.pickLabel(x, y);
         map.pickMarker(x, y);
 
-        map.setPositionEased(tappedPoint, 1000);
+        map.setCameraPositionEased(new CameraUpdate().setPosition(tappedPoint), 1000);
 
         return true;
     }
 
     @Override
     public boolean onDoubleTap(float x, float y) {
-        map.setZoomEased(map.getZoom() + 1.f, 500);
+
         LngLat tapped = map.screenPositionToLngLat(new PointF(x, y));
         LngLat current = map.getPosition();
         LngLat next = new LngLat(
                 .5 * (tapped.longitude + current.longitude),
                 .5 * (tapped.latitude + current.latitude));
-        map.setPositionEased(next, 500);
+
+        map.setCameraPositionEased(new CameraUpdate().setPosition(next).zoomIn(), 500, MapController.EaseType.CUBIC);
         return true;
     }
 
