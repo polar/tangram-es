@@ -432,8 +432,15 @@ public class MapController implements Renderer {
      * @param camera CameraPosition to set
      */
     public void setCameraPosition(@NonNull final CameraPosition camera) {
-        checkPointer(mapPointer);
-        nativeSetCameraPosition(mapPointer, camera.longitude, camera.latitude, camera.zoom, camera.rotation, camera.tilt, 0.f, 0);
+        setCameraPositionEased(camera, 0, DEFAULT_EASE_TYPE,null);
+    }
+
+    /**
+     * Set the camera position of the map view
+     * @param update CameraUpdate to modify current camera position
+     */
+    public void setCameraPosition(@NonNull final CameraUpdate update) {
+        setCameraPositionEased(update, 0, DEFAULT_EASE_TYPE,null);
     }
 
     /**
@@ -472,7 +479,7 @@ public class MapController implements Renderer {
      * @param ease Type of easing to use
      * @param cb callback for handling animation finished or canceled event
      */
-    public void setCameraPositionEased(@NonNull final CameraPosition camera, final int duration, @NonNull final EaseType ease, final CameraAnimationCallback cb) {
+    public void setCameraPositionEased(@NonNull final CameraPosition camera, final int duration, @NonNull final EaseType ease, @Nullable final CameraAnimationCallback cb) {
         checkPointer(mapPointer);
 
         if (cameraAnimationCallback != null) {
@@ -496,27 +503,22 @@ public class MapController implements Renderer {
      * @param cb callback for handling animation finished or canceled event
      */
     public void setCameraPositionEased(@NonNull final CameraUpdate update, final int duration, @NonNull final EaseType ease, final CameraAnimationCallback cb) {
-        checkPointer(mapPointer);
 
-        if (cameraAnimationCallback != null) {
-            // NB: Prevent recursion loop when setCameraPositionEased is called from onCancel callback
-            CameraAnimationCallback prev = cameraAnimationCallback;
-            cameraAnimationCallback = null;
-            prev.onCancel();
-
-        }
-        cameraAnimationCallback = cb;
-
-        CameraPosition camera = getCameraPosition();
-
+        CameraPosition camera;
 
         if (update.position != null) {
+            camera = new CameraPosition();
             camera.set(update.position);
+        } else {
+            camera = getCameraPosition();
         }
+
         if (update.bounds != null) {
             double[] lngLatZoom = new double[3];
-            nativeGetEnclosingViewPosition(mapPointer, update.bounds[0].longitude, update.bounds[0].latitude,
-                    update.bounds[1].longitude, update.bounds[1].latitude, update.padding, lngLatZoom);
+            nativeGetEnclosingViewPosition(mapPointer,
+                    update.bounds[0].longitude, update.bounds[0].latitude,
+                    update.bounds[1].longitude, update.bounds[1].latitude,
+                    update.padding, lngLatZoom);
 
             camera.longitude = lngLatZoom[0];
             camera.latitude = lngLatZoom[1];
@@ -538,11 +540,8 @@ public class MapController implements Renderer {
         if (update.tilt != null) {
             camera.tilt = update.tilt;
         }
-        // TODO scrollBy
 
-
-        final float seconds = duration / 1000.f;
-        nativeSetCameraPosition(mapPointer, camera.longitude, camera.latitude, camera.zoom, camera.rotation, camera.tilt, seconds, ease.ordinal());
+        setCameraPositionEased(camera, duration, ease, cb);
     }
 
     /**
@@ -578,8 +577,7 @@ public class MapController implements Renderer {
      * @param position LngLat of the position to set
      */
     public void setPosition(@NonNull final LngLat position) {
-        checkPointer(mapPointer);
-        nativeSetPosition(mapPointer, position.longitude, position.latitude);
+        setCameraPosition(new CameraUpdate().setPosition(position));
     }
 
     /**
@@ -598,11 +596,7 @@ public class MapController implements Renderer {
      * @param ease Type of easing to use
      */
     public void setPositionEased(@NonNull final LngLat position, final int duration, @NonNull final EaseType ease) {
-        checkPointer(mapPointer);
-        CameraPosition cameraPosition = getCameraPosition();
-        cameraPosition.longitude = position.longitude;
-        cameraPosition.latitude = position.latitude;
-        setCameraPositionEased(cameraPosition, duration, ease);
+        setCameraPositionEased(new CameraUpdate().setPosition(position), duration, ease, null);
     }
 
     /**
@@ -611,7 +605,7 @@ public class MapController implements Renderer {
      */
     @NonNull
     public LngLat getPosition() {
-        return getPosition(new LngLat());
+        return getCameraPosition().getPosition();
     }
 
     /**
@@ -621,10 +615,7 @@ public class MapController implements Renderer {
      */
     @NonNull
     public LngLat getPosition(@NonNull final LngLat out) {
-        checkPointer(mapPointer);
-        final double[] tmp = { 0, 0 };
-        nativeGetPosition(mapPointer, tmp);
-        return out.set(tmp[0], tmp[1]);
+        return getCameraPosition().getPosition(out);
     }
 
     /**
@@ -632,8 +623,7 @@ public class MapController implements Renderer {
      * @param zoom Zoom level; lower values show more area
      */
     public void setZoom(final float zoom) {
-        checkPointer(mapPointer);
-        nativeSetZoom(mapPointer, zoom);
+        setCameraPosition(new CameraUpdate().setZoom(zoom));
     }
 
     /**
@@ -652,10 +642,7 @@ public class MapController implements Renderer {
      * @param ease Type of easing to use
      */
     public void setZoomEased(final float zoom, final int duration, @NonNull final EaseType ease) {
-        checkPointer(mapPointer);
-        CameraPosition cameraPosition = getCameraPosition();
-        cameraPosition.zoom = zoom;
-        setCameraPositionEased(cameraPosition, duration, ease);
+        setCameraPositionEased(new CameraUpdate().setZoom(zoom), duration, ease, null);
     }
 
     /**
@@ -663,8 +650,7 @@ public class MapController implements Renderer {
      * @return Zoom level; lower values show more area
      */
     public float getZoom() {
-        checkPointer(mapPointer);
-        return nativeGetZoom(mapPointer);
+        return getCameraPosition().getZoom();
     }
 
     /**
@@ -672,8 +658,7 @@ public class MapController implements Renderer {
      * @param rotation Counter-clockwise rotation in radians; 0 corresponds to North pointing up
      */
     public void setRotation(final float rotation) {
-        checkPointer(mapPointer);
-        nativeSetRotation(mapPointer, rotation);
+        setCameraPosition(new CameraUpdate().setRotation(rotation));
     }
 
     /**
@@ -692,10 +677,7 @@ public class MapController implements Renderer {
      * @param ease Type of easing to use
      */
     public void setRotationEased(final float rotation, final int duration, @NonNull final EaseType ease) {
-        checkPointer(mapPointer);
-        CameraPosition cameraPosition = getCameraPosition();
-        cameraPosition.rotation = rotation;
-        setCameraPositionEased(cameraPosition, duration, ease);
+        setCameraPositionEased(new CameraUpdate().setRotation(rotation), duration, ease, null);
     }
 
     /**
@@ -703,8 +685,7 @@ public class MapController implements Renderer {
      * @return Counter-clockwise rotation in radians; 0 corresponds to North pointing up
      */
     public float getRotation() {
-        checkPointer(mapPointer);
-        return nativeGetRotation(mapPointer);
+        return getCameraPosition().getRotation();
     }
 
     /**
@@ -712,8 +693,7 @@ public class MapController implements Renderer {
      * @param tilt Tilt angle in radians; 0 corresponds to straight down
      */
     public void setTilt(final float tilt) {
-        checkPointer(mapPointer);
-        nativeSetTilt(mapPointer, tilt);
+        setCameraPosition(new CameraUpdate().setTilt(tilt));
     }
 
     /**
@@ -732,10 +712,7 @@ public class MapController implements Renderer {
      * @param ease Type of easing to use
      */
     public void setTiltEased(final float tilt, final int duration, @NonNull final EaseType ease) {
-        checkPointer(mapPointer);
-        CameraPosition cameraPosition = getCameraPosition();
-        cameraPosition.tilt = tilt;
-        setCameraPositionEased(cameraPosition, duration, ease);
+        setCameraPositionEased(new CameraUpdate().setTilt(tilt), duration, ease, null);
     }
 
     /**
@@ -743,8 +720,7 @@ public class MapController implements Renderer {
      * @return Tilt angle in radians; 0 corresponds to straight down
      */
     public float getTilt() {
-        checkPointer(mapPointer);
-        return nativeGetTilt(mapPointer);
+        return getCameraPosition().getTilt();
     }
 
     /**
@@ -1380,14 +1356,6 @@ public class MapController implements Renderer {
     private synchronized native void nativeRender(long mapPtr);
     private synchronized native void nativeGetCameraPosition(long mapPtr, double[] lonLatOut, float[] zoomRotationTiltOut);
     private synchronized native void nativeSetCameraPosition(long mapPtr, double lon, double lat, float zoom, float rotation, float tilt, float seconds, int ease);
-    private synchronized native void nativeSetPosition(long mapPtr, double lon, double lat);
-    private synchronized native void nativeGetPosition(long mapPtr, double[] lonLatOut);
-    private synchronized native void nativeSetZoom(long mapPtr, float zoom);
-    private synchronized native float nativeGetZoom(long mapPtr);
-    private synchronized native void nativeSetRotation(long mapPtr, float radians);
-    private synchronized native float nativeGetRotation(long mapPtr);
-    private synchronized native void nativeSetTilt(long mapPtr, float radians);
-    private synchronized native float nativeGetTilt(long mapPtr);
     private synchronized native void nativeFlyTo(long mapPtr, double lon, double lat, float zoom, float duration, float speed);
     private synchronized native void nativeGetEnclosingViewPosition(long mapPtr, double aLng, double aLat, double bLng, double bLat, float bufferMeters, double[] lngLatZoom);
     private synchronized native boolean nativeScreenPositionToLngLat(long mapPtr, double[] coordinates);
