@@ -37,11 +37,11 @@ afterEvaluate { project ->
         pom.artifactId = POM_ARTIFACT_ID
         pom.version = VERSION_NAME
 
-        repository(url: 'https://api.bintray.com/maven/tangrams/maven/tangram/') {
-          authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+        repository(url: 'http://tiles-dev.alk.com:20000/artifactory/libs-release-local') {
+          authentication(userName: System.env.TILES_DEV_AF_USER, password: System.env.TILES_DEV_AF_KEY)
         }
-        snapshotRepository(url: 'https://oss.jfrog.org/artifactory/oss-snapshot-local/') {
-          authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+        snapshotRepository(url: 'http://tiles-dev.alk.com:20000/artifactory/libs-snapshot-local') {
+          authentication(userName: System.env.TILES_DEV_AF_USER, password: System.env.TILES_DEV_AF_KEY)
         }
 
         pom.project {
@@ -101,7 +101,8 @@ afterEvaluate { project ->
   }
 
   artifacts {
-    archives androidSourcesJar
-    archives androidJavadocsJar
+    // For ALK: We do not include sources or javadocs
+    //archives androidSourcesJar
+    //archives androidJavadocsJar
   }
 }
