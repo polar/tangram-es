@@ -8,6 +8,7 @@ import android.view.Window;
 import android.widget.Toast;
 
 import com.mapzen.tangram.CachePolicy;
+import com.mapzen.tangram.CameraPosition;
 import com.mapzen.tangram.CameraUpdate;
 import com.mapzen.tangram.HttpHandler;
 import com.mapzen.tangram.LabelPickResult;
@@ -111,9 +112,7 @@ public class MainActivity extends AppCompatActivity implements MapController.Sce
 
         map = view.getMap(this);
         map.loadSceneFile(sceneUrl, sceneUpdates);
-
-        map.setZoom(16);
-        map.setPosition(new LngLat(-74.00976419448854, 40.70532700869127));
+        map.setCameraPosition(new CameraUpdate().setZoom(16).setPosition(new LngLat(-74.00976419448854, 40.70532700869127)));
         map.setHttpHandler(getHttpHandler());
         map.setTapResponder(this);
         map.setDoubleTapResponder(this);
@@ -230,12 +229,13 @@ public class MainActivity extends AppCompatActivity implements MapController.Sce
     public boolean onDoubleTap(float x, float y) {
 
         LngLat tapped = map.screenPositionToLngLat(new PointF(x, y));
-        LngLat current = map.getPosition();
+        CameraPosition current = map.getCameraPosition();
         LngLat next = new LngLat(
                 .5 * (tapped.longitude + current.longitude),
                 .5 * (tapped.latitude + current.latitude));
 
-        map.setCameraPositionEased(new CameraUpdate().setPosition(next).zoomIn(), 500, MapController.EaseType.CUBIC);
+        map.setCameraPositionEased(CameraUpdate.newCameraPosition(current).setPosition(next).zoomIn(),
+                    500, MapController.EaseType.CUBIC);
         return true;
     }
 
