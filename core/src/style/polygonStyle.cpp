@@ -96,6 +96,7 @@ public:
         float height;
         float minHeight;
         uint32_t selectionColor = 0;
+        bool keepTileEdges = false;
     };
 
     void setup(const Tile& _tile) override {
@@ -106,7 +107,7 @@ public:
 
     void setup(const Marker& _marker, int zoom) override {
         m_zoom = zoom;
-        m_tileUnitsPerMeter = 1.f / _marker.extent();
+        m_tileUnitsPerMeter = 1.f / _marker.modelScale();
         m_meshData.clear();
     }
 
@@ -153,6 +154,7 @@ auto PolygonStyleBuilder<V>::parseRule(const DrawRule& _rule, const Properties& 
     _rule.get(StyleParamKey::color, p.color);
     _rule.get(StyleParamKey::extrude, p.extrude);
     _rule.get(StyleParamKey::order, p.order);
+    _rule.get(StyleParamKey::tile_edges, p.keepTileEdges);
 
     if (Tangram::getDebugFlag(Tangram::DebugFlags::proxy_colors)) {
         p.color <<= (m_zoom % 6);
@@ -170,6 +172,8 @@ template <class V>
 bool PolygonStyleBuilder<V>::addPolygon(const Polygon& _polygon, const Properties& _props, const DrawRule& _rule) {
 
     auto p = parseRule(_rule, _props);
+
+    m_builder.keepTileEdges = p.keepTileEdges;
 
     m_builder.addVertex = [this, p](const glm::vec3& coord,
                                  const glm::vec3& normal,
