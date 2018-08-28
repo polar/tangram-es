@@ -37,10 +37,10 @@ afterEvaluate { project ->
         pom.artifactId = POM_ARTIFACT_ID
         pom.version = VERSION_NAME
 
-        repository(url: 'http://tiles-dev.alk.com:20000/artifactory/libs-release-local') {
+        repository(url: 'http://pri-dev-ub04.alk.com:20000/artifactory/libs-release-local') {
           authentication(userName: System.env.TILES_DEV_AF_USER, password: System.env.TILES_DEV_AF_KEY)
         }
-        snapshotRepository(url: 'http://tiles-dev.alk.com:20000/artifactory/libs-snapshot-local') {
+        snapshotRepository(url: 'http://pri-dev-ub04.alk.com:20000/artifactory/libs-snapshot-local') {
           authentication(userName: System.env.TILES_DEV_AF_USER, password: System.env.TILES_DEV_AF_KEY)
         }
 
