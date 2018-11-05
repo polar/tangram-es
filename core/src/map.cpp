@@ -173,12 +173,6 @@ void Map::Impl::setScene(std::shared_ptr<Scene>& _scene) {
 
     bool animated = scene->animated() == Scene::animate::yes;
 
-    if (scene->animated() == Scene::animate::none) {
-        for (const auto& style : scene->styles()) {
-            animated |= style->isAnimated();
-        }
-    }
-
     if (animated != platform->isContinuousRendering()) {
         platform->setContinuousRendering(animated);
     }
@@ -540,10 +534,17 @@ void Map::render() {
         impl->selectionQueries.clear();
     }
 
+    // Get background color for frame based on zoom level, if there are stops
+    auto background = impl->scene->background();
+    if (impl->scene->backgroundStops().frames.size() > 0) {
+        background = impl->scene->backgroundStops().evalColor(getZoom());
+    }
+
     // Setup default framebuffer for a new frame
     glm::vec2 viewport(impl->view.getWidth(), impl->view.getHeight());
+
     FrameBuffer::apply(impl->renderState, impl->renderState.defaultFrameBuffer(),
-                       viewport, impl->scene->background().toColorF());
+                       viewport, background.toColorF());
 
     if (drawSelectionBuffer) {
         impl->selectionBuffer->drawDebug(impl->renderState, viewport);
@@ -551,18 +552,26 @@ void Map::render() {
         return;
     }
 
+    bool drawnAnimatedStyle = false;
     {
         std::lock_guard<std::mutex> lock(impl->tilesMutex);
 
         // Loop over all styles
         for (const auto& style : impl->scene->styles()) {
 
-            style->draw(impl->renderState,
-                        impl->view, *(impl->scene),
-                        impl->tileManager.getVisibleTiles(),
-                        impl->markerManager.markers());
+            bool styleDrawn = style->draw(impl->renderState,
+                                impl->view, *(impl->scene),
+                                impl->tileManager.getVisibleTiles(),
+                                impl->markerManager.markers());
 
+            drawnAnimatedStyle |= (styleDrawn && style->isAnimated());
         }
+    }
+
+    if (impl->scene->animated() != Scene::animate::no &&
+        drawnAnimatedStyle != platform->isContinuousRendering()) {
+
+        platform->setContinuousRendering(drawnAnimatedStyle);
     }
 
     impl->labels.drawDebug(impl->renderState, impl->view);
